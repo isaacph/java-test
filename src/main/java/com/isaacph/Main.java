@@ -6,6 +6,7 @@ import org.lwjgl.opengl.*;
 
 import com.isaacph.render.BoxRenderer;
 import com.isaacph.render.Camera;
+import com.isaacph.render.Font;
 import com.isaacph.render.Shaders;
 import com.isaacph.util.MathUtil;
 
@@ -30,6 +31,9 @@ public class Main {
 
     public GameTime gameTime;
     public Camera camera;
+    public Font font;
+
+    public Chatbox chatbox;
 
     private Mode mode = Mode.PLAY;
 
@@ -77,6 +81,7 @@ public class Main {
 
         // Make the window visible
         glfwShowWindow(window);
+        glfwFocusWindow(window);
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
         // LWJGL detects the context that is current in the current thread,
@@ -100,10 +105,18 @@ public class Main {
         glfwSetKeyCallback(window, ((window1, key, scancode, action, mods) -> {
             keyboardButton(key, scancode, action, mods);
         }));
+        glfwSetCharCallback(window, (win, codepoint) -> {
+            if(chatbox.focus) {
+                chatbox.typing.append((char) codepoint);
+            }
+        });
 
         this.boxRenderer = new BoxRenderer();
         this.gameTime = new GameTime(window);
         this.camera = new Camera(gameTime, window);
+
+        this.font = new Font("font.ttf", 24, 512, 512);
+        this.chatbox = new Chatbox(font, boxRenderer, gameTime);
 
         windowResize(screenWidth, screenHeight);
     }
@@ -138,6 +151,42 @@ public class Main {
     }
 
     private void keyboardButton(int key, int scancode, int action, int mods) {
+        if(chatbox.focus) {
+            if(key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+                if (!chatbox.send()) {
+                    chatbox.disable();
+                }
+            }
+            if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+                chatbox.disable();
+                if(chatbox.typing.length() > 0) {
+                    chatbox.typing.delete(0, chatbox.typing.length());
+                }
+            } else if(key == GLFW_KEY_BACKSPACE && action > 0) {
+                if(chatbox.typing.length() > 0) {
+                    chatbox.typing.deleteCharAt(chatbox.typing.length() - 1);
+                }
+            }
+            if(key == GLFW_KEY_UP && action == GLFW_PRESS) {
+                chatbox.prevCommand();
+            }
+            else if(key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+                chatbox.nextCommand();
+            }
+        } else {
+            if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+            } else if(key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+                chatbox.enable();
+            } else if(key == GLFW_KEY_SLASH && action == GLFW_PRESS) {
+                chatbox.enable();
+                // the / gets captured and appended anyways by the other callback
+                // if(chatbox.typing.isEmpty()) {
+                //     chatbox.typing.append('/');
+                // }
+            } else if(mode == Mode.PLAY) {
+                // stuff related to playing the game
+            }
+        }
     }
 
     private void loop() {
@@ -151,12 +200,44 @@ public class Main {
             // Poll for window events. Invokes window callbacks
             pollMousePosition();
             glfwPollEvents();
+            if(!chatbox.focus) camera.move();
 
             if(mode == Mode.EDIT) {
             } else if(mode == Mode.PLAY) {
             }
 
             // all updates go here
+            chatbox.update();
+            for(String cmd : chatbox.commands) {
+                try {
+                    if(cmd.startsWith("/")) {
+                        String[] args = cmd.substring(1).split("\\s");
+                        args[0] = args[0].toLowerCase();
+                        if(args[0].equals("test")) {
+                            chatbox.println("Testing!");
+                        } else if(args[0].equals("exit")) {
+                            glfwSetWindowShouldClose(this.window, true);
+                        } else if(args[0].equals("edit")) {
+                            mode = Mode.EDIT;
+                            chatbox.println("Editing enabled");
+                        } else if(args[0].equals("play")) {
+                            mode = Mode.PLAY;
+                            chatbox.println("Gameplay enabled");
+                        } else {
+                            chatbox.println("Unknown command!");
+                        }
+                    } else {
+                        //connection.queueSend(new ChatMessage(cmd));
+                        chatbox.println("Chat not implemented yet");
+                    }
+                } catch(Exception e) {
+                    chatbox.println("Error processing command:");
+                    chatbox.println(e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+            chatbox.prevCommands.addAll(chatbox.commands);
+            chatbox.commands.clear();
 
             glClear(GL_COLOR_BUFFER_BIT); // clear the framebuffer
 
@@ -165,6 +246,8 @@ public class Main {
 
             boxRenderer.draw(new Matrix4f(camera.getProjView()).translate(mouseViewPosition.x, mouseViewPosition.y, 0).scale(0.25f),
                     new Vector4f(0.5f));
+
+            chatbox.draw(camera.getProjection());
 
             glfwSwapBuffers(window); // swap the color buffers, rendering what was drawn to the screen
         }
