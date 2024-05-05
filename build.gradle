@@ -1,13 +1,17 @@
 plugins {
 	id 'java'
     id 'application'
-	id 'org.springframework.boot' version '3.2.5'
-	id 'io.spring.dependency-management' version '1.1.4' // required for spring boot
     id 'io.freefair.lombok' version '8.6'
+    id "com.google.protobuf" version "0.9.4"
 }
 
 application {
-    mainClass.set('com.isaacph.Application')
+    mainClass = 'com.isaacph.client.Main'
+}
+
+task(server, dependsOn: 'classes', type: JavaExec) {
+   mainClass = 'com.isaacph.server.Server'
+   classpath = sourceSets.main.runtimeClasspath
 }
 
 java {
@@ -48,8 +52,6 @@ repositories {
 
 dependencies {
     testImplementation "junit:junit:4.12"
-	implementation 'org.springframework.boot:spring-boot-starter'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
 	implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
@@ -69,5 +71,8 @@ dependencies {
 	runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
 	implementation "org.joml:joml:${jomlVersion}"
     implementation "org.json:json:20240303"
+
+    // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
+    implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '4.27.0-RC1'
 }
 

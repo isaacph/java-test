@@ -1,9 +1,10 @@
-package com.isaacph;
+package com.isaacph.client;
 
 import org.joml.Matrix4f;
 
 import org.joml.Vector4f;
 
+import com.isaacph.GameTime;
 import com.isaacph.render.BoxRenderer;
 import com.isaacph.render.Font;
 

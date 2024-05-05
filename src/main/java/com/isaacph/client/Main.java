@@ -1,16 +1,15 @@
-package com.isaacph;
+package com.isaacph.client;
 
 import org.joml.*;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 
+import com.isaacph.GameTime;
 import com.isaacph.render.BoxRenderer;
 import com.isaacph.render.Camera;
 import com.isaacph.render.Font;
 import com.isaacph.render.Shaders;
 import com.isaacph.util.MathUtil;
-
-import java.util.*;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -259,5 +258,8 @@ public class Main {
         boxRenderer.cleanUp();
     }
 
+    public static void main(String... args) {
+        new Main().run();
+    }
 }
 
